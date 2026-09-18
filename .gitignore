@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.env
+*.sqlite3
+*.db
+index/
+output/
+*.pdf
+*.docx
+!templates/forms/*.pdf
+!templates/forms/*.docx
