@@ -3,7 +3,8 @@
 Sources:
     'blacks' -- Black's Law Dictionary, 4th ed. (local FTS5 index at
                 data/blacks4.sqlite, built by scripts/build_blacks_index.py)
-    'maat'   -- the 42 Laws of Maat corpus (not indexed yet)
+    'maat'   -- the 42 Laws of Maat corpus (references/42-laws-of-maat.md:
+                the 42 negative confessions; ethical grounding, not law)
     'all'    -- both of the above
 
 If an index is absent the function says so honestly; it never invents
@@ -17,9 +18,10 @@ import sqlite3
 from pathlib import Path
 
 INDEX_PATH = Path(__file__).resolve().parents[3] / "data" / "blacks4.sqlite"
+MAAT_PATH = Path(__file__).resolve().parents[3] / "references" / "42-laws-of-maat.md"
 
 BLACKS_MISSING = "(Black's 4th index not built \u2014 run scripts/build_blacks_index.py)"
-MAAT_MISSING = "(42 Laws of Maat corpus not yet indexed \u2014 no seed definitions available)"
+MAAT_MISSING = "(42 Laws of Maat corpus not found at references/42-laws-of-maat.md)"
 NO_SOURCES = "(no seed sources selected)"
 
 _STOPWORDS = frozenset(
@@ -114,6 +116,64 @@ def _query_blacks(question: str) -> str:
     return "\n".join(parts)
 
 
+_MAAT_LAWS = None
+_MAAT_MAX_RESULTS = 5
+
+MAAT_HEADER = (
+    "The 42 Laws of Ma\u2019at \u2014 42 declarations of ethical conduct (the "
+    "negative confessions) from the Papyrus of Ani, Book of the Dead, "
+    "Chapter 125, recited before the weighing of the heart against Ma\u2019at\u2019s "
+    "feather. Public-domain translation (E.A. Wallis Budge). Ethical "
+    "grounding for this tool, not operative law: no court cites these."
+)
+
+
+def _load_maat_laws():
+    """Parse the numbered declarations from references/42-laws-of-maat.md."""
+    global _MAAT_LAWS
+    if _MAAT_LAWS is None:
+        laws = []
+        text = MAAT_PATH.read_text(encoding="utf-8")
+        for line in text.splitlines():
+            m = re.match(r"^(\d+)\.\s+(.*\S)\s*$", line)
+            if m:
+                laws.append((int(m.group(1)), m.group(2)))
+        _MAAT_LAWS = laws
+    return _MAAT_LAWS
+
+
+def _query_maat(question):
+    if not MAAT_PATH.exists():
+        return MAAT_MISSING
+    try:
+        laws = _load_maat_laws()
+    except OSError as exc:
+        return "(42 Laws of Maat corpus unreadable: %s)" % exc
+    if not laws:
+        return "(42 Laws of Maat corpus parsed to zero declarations)"
+    terms = _key_terms(question)
+    matched = []
+    seen = set()
+    for num, decl in laws:
+        low = decl.lower()
+        if any(t in low for t in terms) and num not in seen:
+            matched.append((num, decl))
+            seen.add(num)
+            if len(matched) >= _MAAT_MAX_RESULTS:
+                break
+    parts = [MAAT_HEADER]
+    if matched:
+        parts.append("Declarations matching the question:")
+        for num, decl in matched:
+            parts.append("  %d. %s" % (num, decl))
+    else:
+        parts.append(
+            "No declarations matched the question\u2019s key terms; the full "
+            "corpus of 42 declarations is at references/42-laws-of-maat.md."
+        )
+    return "\n".join(parts)
+
+
 def seed_context(question: str, sources: str) -> str:
     """Return seed-corpus context text relevant to *question*.
 
@@ -124,5 +184,5 @@ def seed_context(question: str, sources: str) -> str:
     if sources in ("all", "blacks"):
         sections.append(_query_blacks(question))
     if sources in ("all", "maat"):
-        sections.append(MAAT_MISSING)
+        sections.append(_query_maat(question))
     return "\n\n".join(sections) if sections else NO_SOURCES

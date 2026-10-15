@@ -32,15 +32,46 @@ def test_blacks_missing_index_degrades_honestly(tmp_path, monkeypatch):
     assert "**" not in out
 
 
-def test_maat_corpus_not_indexed():
-    out = seeds.seed_context("anything at all", "maat")
-    assert "not yet indexed" in out
+def test_maat_corpus_has_42_declarations():
+    laws = seeds._load_maat_laws()
+    assert len(laws) == 42, f"expected 42 declarations, got {len(laws)}"
+    assert laws[0][0] == 1 and laws[-1][0] == 42
+    # verbatim Budge translation spot checks
+    assert laws[2] == (3, "I have not stolen. (Hail, Fenti, who comest forth from Khemenu)")
+    assert laws[32] == (
+        33,
+        "I have wronged none, I have done no evil. (Hail, Nefer-Tem, who comest forth from Het-ka-Ptah)",
+    )
 
 
-def test_all_sources_combines_blacks_and_maat_note():
+def test_maat_query_returns_matching_declarations():
+    out = seeds.seed_context("what was stolen?", "maat")
+    assert "42 Laws of Ma\u2019at" in out
+    assert "I have not stolen." in out
+    assert "not operative law" in out
+
+
+def test_maat_no_match_is_honest():
+    out = seeds.seed_context("qxzylphobic flibbertigibbet", "maat")
+    assert "42 Laws of Ma\u2019at" in out
+    assert "No declarations matched" in out
+    # and it must not invent a declaration
+    assert "  1. " not in out
+
+
+def test_maat_missing_file_degrades_honestly(tmp_path, monkeypatch):
+    monkeypatch.setattr(seeds, "MAAT_PATH", tmp_path / "no-maat.md")
+    monkeypatch.setattr(seeds, "_MAAT_LAWS", None)
+    out = seeds.seed_context("stealing", "maat")
+    assert "not found" in out
+    assert "42-laws-of-maat.md" in out
+
+
+def test_all_sources_combines_blacks_and_maat():
     out = seeds.seed_context("negligence", "all")
     assert "NEGLIGENCE" in out
-    assert "not yet indexed" in out
+    assert "42 Laws of Ma\u2019at" in out
+    assert "not yet indexed" not in out
 
 
 def test_unknown_sources():
