@@ -67,8 +67,76 @@ pip install -e .
 ```bash
 maat ask "what is adverse possession in Indiana?"
 maat research "tenant retaliation security deposit Indiana"
-maat file --type small-claims-complaint --evidence ./my-case/
+
+# Filing pipeline: packet -> GATE 1 approval -> e-file ->
+# GATE 2 fee confirmation -> emailed copy + tracking log.
+maat file --type small-claims-complaint --evidence ./my-case/ --output ./packet
+maat file --type small-claims-complaint --evidence ./my-case/ --court in-odyssey \
+    --submit --pay --filer-email you@example.com        # dry run by default
+maat file --type motion-skeleton --evidence ./my-case/ --court in-odyssey \
+    --submit --pay --live                              # real path (gates still required)
+
+# E-file credentials + payment references (secure entry, encrypted storage)
+maat creds setup --court in-odyssey
+maat creds setup-payment --id main-card
+maat creds list
 ```
+
+## E-file credentials & payment references
+
+Filing portals (Tyler/Odyssey, CM/ECF) need account credentials, and fee
+payment needs a payment reference. Both are stored encrypted and loaded
+automatically at e-file time:
+
+1.  — username + secret entered via
+    (no echo, never displayed, never logged).
+2.  — a portal token or masked
+   identifier. Full card numbers are REFUSED (no PCI scope in this tool);
+   Tyler/Odyssey-style portals collect the fee inside their own checkout.
+
+Storage: the system keyring is tried first (macOS Keychain, Windows
+Credential Manager, Linux Secret Service); on headless Linux with no working
+keyring backend, the fallback is a Fernet-encrypted file at
+ (0600), with the key from
+ or a setup-time passphrase (PBKDF2, 600k rounds).
+The key is never written next to the file.
+
+Rules: never hardcode credentials (code, tests, docs, examples); tests use
+fake credentials in a tmp dir. Credentials load automatically, but nothing
+files without your explicit GATE 1 approval and nothing is charged without
+your explicit GATE 2 confirmation.
+
+Packet emails are configured env-only and off by default (dry run):
+
+    MAAT_SMTP_HOST / MAAT_SMTP_PORT / MAAT_SMTP_USER / MAAT_SMTP_PASS / MAAT_SMTP_FROM
+
+## E-file credentials & payment references
+
+Filing portals (Tyler/Odyssey, CM/ECF) need account credentials, and fee
+payment needs a payment reference. Both are stored encrypted and loaded
+automatically at e-file time:
+
+1. `maat creds setup --court in-odyssey` -- username + secret entered via
+   `getpass` (no echo, never displayed, never logged).
+2. `maat creds setup-payment --id main` -- a portal token or masked
+   identifier. Full card numbers are REFUSED (no PCI scope in this tool);
+   Tyler/Odyssey-style portals collect the fee inside their own checkout.
+
+Storage: the system keyring is tried first (macOS Keychain, Windows
+Credential Manager, Linux Secret Service); on headless Linux with no working
+keyring backend, the fallback is a Fernet-encrypted file at
+`~/.config/house-of-maat/credentials.enc` (0600), with the key from
+`MAAT_CREDENTIALS_KEY` or a setup-time passphrase (PBKDF2, 600k rounds).
+The key is never written next to the file.
+
+Rules: never hardcode credentials (code, tests, docs, examples); tests use
+fake credentials in a tmp dir. Credentials load automatically, but nothing
+files without your explicit GATE 1 approval and nothing is charged without
+your explicit GATE 2 confirmation.
+
+Packet emails are configured env-only and off by default (dry run):
+
+    MAAT_SMTP_HOST / MAAT_SMTP_PORT / MAAT_SMTP_USER / MAAT_SMTP_PASS / MAAT_SMTP_FROM
 
 ## License
 
