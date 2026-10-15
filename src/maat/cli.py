@@ -24,6 +24,8 @@ from __future__ import annotations
 import click
 
 from maat.modes.file import file_mode
+from maat.modes.ask import ask_mode
+from maat.modes.research import research_mode
 from maat.filing.credentials import CredentialStore, CredentialError
 
 
@@ -66,6 +68,24 @@ def file_cmd(case_type, evidence, output, court_id, jurisdiction, filing_type,
         check_citations=not no_citation_check,
     )
     click.echo(summary)
+
+
+@cli.command("ask")
+@click.argument("question")
+@click.option("--sources", default="all", help="Sources to query: all, maat, blacks, courtlistener")
+def ask_cmd(question, sources):
+    """Answer a legal question with citations."""
+    click.echo(ask_mode(question, sources))
+
+
+@cli.command("research")
+@click.argument("topic")
+@click.option("--jurisdiction", default="", help="Limit to a jurisdiction, e.g. Indiana")
+@click.option("--year-min", type=int, default=None)
+@click.option("--year-max", type=int, default=None)
+def research_cmd(topic, jurisdiction, year_min, year_max):
+    """Find verified cases on a topic."""
+    click.echo(research_mode(topic, jurisdiction, year_min, year_max))
 
 
 @cli.group("creds")
@@ -116,3 +136,7 @@ def creds_list():
 
 def main():
     cli()
+
+
+if __name__ == "__main__":
+    main()
