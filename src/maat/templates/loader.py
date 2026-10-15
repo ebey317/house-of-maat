@@ -1,6 +1,6 @@
 from pathlib import Path
 
-TEMPLATE_DIR = Path(__file__).parent.parent / 'templates'
+TEMPLATE_DIR = Path(__file__).resolve().parents[3] / 'templates'
 
 def load_template(name: str) -> str:
     """Return path to a template by case type."""
