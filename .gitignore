@@ -11,3 +11,5 @@ output/
 *.docx
 !templates/forms/*.pdf
 !templates/forms/*.docx
+
+data/*.sqlite
