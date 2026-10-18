@@ -88,34 +88,6 @@ Filing portals (Tyler/Odyssey, CM/ECF) need account credentials, and fee
 payment needs a payment reference. Both are stored encrypted and loaded
 automatically at e-file time:
 
-1.  — username + secret entered via
-    (no echo, never displayed, never logged).
-2.  — a portal token or masked
-   identifier. Full card numbers are REFUSED (no PCI scope in this tool);
-   Tyler/Odyssey-style portals collect the fee inside their own checkout.
-
-Storage: the system keyring is tried first (macOS Keychain, Windows
-Credential Manager, Linux Secret Service); on headless Linux with no working
-keyring backend, the fallback is a Fernet-encrypted file at
- (0600), with the key from
- or a setup-time passphrase (PBKDF2, 600k rounds).
-The key is never written next to the file.
-
-Rules: never hardcode credentials (code, tests, docs, examples); tests use
-fake credentials in a tmp dir. Credentials load automatically, but nothing
-files without your explicit GATE 1 approval and nothing is charged without
-your explicit GATE 2 confirmation.
-
-Packet emails are configured env-only and off by default (dry run):
-
-    MAAT_SMTP_HOST / MAAT_SMTP_PORT / MAAT_SMTP_USER / MAAT_SMTP_PASS / MAAT_SMTP_FROM
-
-## E-file credentials & payment references
-
-Filing portals (Tyler/Odyssey, CM/ECF) need account credentials, and fee
-payment needs a payment reference. Both are stored encrypted and loaded
-automatically at e-file time:
-
 1. `maat creds setup --court in-odyssey` -- username + secret entered via
    `getpass` (no echo, never displayed, never logged).
 2. `maat creds setup-payment --id main` -- a portal token or masked
